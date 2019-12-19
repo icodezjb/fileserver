@@ -16,6 +16,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	. "github.com/schollz/progressbar/v2"
 )
 
 var (
@@ -99,13 +101,24 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	f, err := os.OpenFile(dataDir+filename, os.O_CREATE|os.O_WRONLY, 0775)
+	defer f.Close()
+
 	if err != nil {
 		http.Error(w, "上传失败: "+err.Error(), http.StatusOK)
 	}
 
 	log.Println(strings.Split(r.RemoteAddr, ":")[0], r.RequestURI, "create ", dataDir+filename)
 
-	_, err = io.Copy(f, file)
+	bar := NewOptions64(
+		handler.Size,
+		OptionSetTheme(Theme{Saucer: "#", SaucerPadding: "-", BarStart: ">", BarEnd: "<"}),
+		OptionSetWidth(100),
+		OptionSetBytes64(handler.Size),
+	)
+
+	out := io.MultiWriter(f, bar)
+
+	_, err = io.Copy(out, file)
 	if err != nil {
 		http.Error(w, "上传失败: "+err.Error(), http.StatusOK)
 		return
