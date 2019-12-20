@@ -109,7 +109,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "上传失败: "+err.Error(), http.StatusOK)
 	}
 
-	log.Println(strings.Split(r.RemoteAddr, ":")[0], r.RequestURI, "create ", dataDir+filename)
+	log.Println(strings.Split(r.RemoteAddr, ":")[0], r.RequestURI, "create ", filepath.Join(dataDir, filename))
 
 	bar := NewOptions64(
 		handler.Size,
@@ -160,7 +160,7 @@ func indexPageHandler(w http.ResponseWriter, _ *http.Request) {
 func staticServer(w http.ResponseWriter, r *http.Request) {
 	ip := strings.Split(r.RemoteAddr, ":")[0]
 	//trim '/file/'
-	log.Println(ip, dataDir+r.RequestURI[6:], "visit")
+	log.Println(ip, filepath.Join(dataDir, r.RequestURI[6:]), "visit")
 
 	http.StripPrefix("/file", http.FileServer(http.Dir(dataDir))).ServeHTTP(w, r)
 }
