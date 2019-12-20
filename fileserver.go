@@ -102,7 +102,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		filename = handler.Filename
 	}
 
-	newFile, err := os.OpenFile(dataDir+filename, os.O_CREATE|os.O_WRONLY, 0775)
+	newFile, err := os.OpenFile(filepath.Join(dataDir, filename), os.O_CREATE|os.O_WRONLY, 0775)
 	defer newFile.Close()
 
 	if err != nil {
@@ -126,7 +126,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filePath, _ := filepath.Abs(dataDir + filename)
+	filePath, _ := filepath.Abs(filepath.Join(dataDir, filename))
 	http.Error(w, fmt.Sprintf("%v", filename+"	上传完成, 文件路径:"+filePath), http.StatusOK)
 }
 
