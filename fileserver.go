@@ -31,6 +31,8 @@ func main() {
 
 	flag.Parse()
 
+	checkPath(dataDir)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexPageHandler)
 	mux.HandleFunc("/upload", upload)
@@ -100,8 +102,8 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		filename = handler.Filename
 	}
 
-	f, err := os.OpenFile(dataDir+filename, os.O_CREATE|os.O_WRONLY, 0775)
-	defer f.Close()
+	newFile, err := os.OpenFile(dataDir+filename, os.O_CREATE|os.O_WRONLY, 0775)
+	defer newFile.Close()
 
 	if err != nil {
 		http.Error(w, "上传失败: "+err.Error(), http.StatusOK)
@@ -116,7 +118,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		OptionSetBytes64(handler.Size),
 	)
 
-	out := io.MultiWriter(f, bar)
+	out := io.MultiWriter(newFile, bar)
 
 	_, err = io.Copy(out, file)
 	if err != nil {
@@ -128,7 +130,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, fmt.Sprintf("%v", filename+"	上传完成, 文件路径:"+filePath), http.StatusOK)
 }
 
-func indexPageHandler(w http.ResponseWriter, r *http.Request) {
+func indexPageHandler(w http.ResponseWriter, _ *http.Request) {
 	const indexTpl = `
 <html>
 <head>
@@ -262,4 +264,11 @@ func findIp() (string, error) {
 		candidates = append(candidates[:], localIp)
 	}
 	return candidates[0], nil
+}
+
+func checkPath(dir string) {
+	if _, err := os.Stat(dir); err != nil {
+		fmt.Printf("check path: %v\n", err)
+		os.Exit(1)
+	}
 }
