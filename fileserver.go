@@ -74,6 +74,8 @@ func serve(server http.Server) {
 		}
 	}
 	fmt.Printf("Now serving on http://%s:%s/\n", serverIp, port)
+	fmt.Printf("\nUsage:\n")
+	flag.PrintDefaults()
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		panic(err)
