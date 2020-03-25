@@ -21,11 +21,13 @@ import (
 )
 
 var (
-	dataDir string
-	port    string
+	dataDir  string
+	serverIp string
+	port     string
 )
 
 func main() {
+	flag.StringVar(&serverIp, "ip", "", "default auto select local ip address")
 	flag.StringVar(&port, "port", "9090", "port number")
 	flag.StringVar(&dataDir, "dir", "./", "file server data dir")
 
@@ -39,7 +41,7 @@ func main() {
 	mux.HandleFunc("/file/", staticServer)
 
 	server := http.Server{
-		Addr:         ":" + port,
+		Addr:         serverIp + ":" + port,
 		Handler:      mux,
 		ReadTimeout:  10 * time.Minute,
 		WriteTimeout: 10 * time.Minute,
@@ -66,9 +68,12 @@ func serve(server http.Server) {
 		wg.Done()
 	}()
 
-	if ip, err := findIp(); err == nil {
-		fmt.Printf("Now serving on http://%s:%s/\n", ip, port)
+	if serverIp == "" {
+		if ip, err := findIp(); err == nil {
+			serverIp = ip
+		}
 	}
+	fmt.Printf("Now serving on http://%s:%s/\n", serverIp, port)
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		panic(err)
@@ -142,6 +147,14 @@ func indexPageHandler(w http.ResponseWriter, _ *http.Request) {
 		<a href="/upload">上传文件</a></p>
 		<a href="/file">查看文件</a></p>
 	</div>
+
+	<br>
+	<p>命令行访问</p>
+	<p>&nbsp;&nbsp;(1)上传</p>
+	<p>&nbsp;&nbsp;&nbsp;&nbsp;curl -F uploadfile=@<em><strong>yourfilename</strong></em>&nbsp;http://{{.Ip}}:{{.Port}}/upload</p>
+	<p>&nbsp;&nbsp;(2)下载</p>
+	<p>&nbsp;&nbsp;&nbsp;&nbsp;curl -o&nbsp;<em><strong>yourfilename</strong></em>&nbsp; http://{{.Ip}}:{{.Port}}/file/<em><strong>yourfilename</strong></em></p>
+
 </body>
 </html>
 `
@@ -152,7 +165,13 @@ func indexPageHandler(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
-	if err = t.Execute(w, nil); err != nil {
+	if err = t.Execute(w, struct {
+		Ip   string
+		Port string
+	}{
+		Ip:   serverIp,
+		Port: port,
+	}); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
